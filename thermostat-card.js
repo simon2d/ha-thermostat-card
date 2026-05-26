@@ -92,6 +92,23 @@ class ThermostatCard extends HTMLElement {
         background: #0e0e0f; border-radius: 16px;
       }
 
+      .close-btn {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        background: none;
+        border: none;
+        color: #3a3a3c;
+        font-size: 14px;
+        cursor: pointer;
+        line-height: 1;
+        padding: 4px;
+        border-radius: 50%;
+        transition: color 0.2s;
+        font-family: 'DM Sans', sans-serif;
+      }
+      .close-btn:hover { color: #888; }
+
       .room-label {
         font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
         color: #4a4a4c; margin-bottom: 5.2rem; font-weight: 400;
@@ -219,6 +236,7 @@ class ThermostatCard extends HTMLElement {
     const container = document.createElement('div');
     container.innerHTML = `
       <div class="wrap">
+        <button class="close-btn" id="closeBtn">✕</button>
         <div class="room-label" id="roomLabel">Living Room</div>
         <div class="dial-scene" id="dialScene">
           <div class="halo"></div>
@@ -330,6 +348,19 @@ class ThermostatCard extends HTMLElement {
     }, { passive: false });
 
     this._attachWindowListeners();
+
+    // Close button — fires Browser Mod close event
+    const closeBtn = root.getElementById('closeBtn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        this.dispatchEvent(new CustomEvent('ll-custom', {
+          bubbles: true, composed: true,
+          detail: { card_id: 'browser-mod-popup', type: 'close' }
+        }));
+        // Fallback: also try Browser Mod's popup close service
+        window.dispatchEvent(new CustomEvent('browser-mod-close-popup'));
+      });
+    }
 
     root.getElementById('modeRow').addEventListener('click', e => {
       const btn = e.target.closest('[data-mode]');
