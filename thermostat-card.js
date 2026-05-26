@@ -351,6 +351,10 @@ class ThermostatCard extends HTMLElement {
       if (!this._dragging) return;
       this._dragging = false;
       this._callSetTemp();
+      // Block hass state updates briefly so HA's echo doesn't snap the dial back
+      this._cooldown = true;
+      clearTimeout(this._cooldownTimer);
+      this._cooldownTimer = setTimeout(() => { this._cooldown = false; }, 3000);
     };
 
     // Store bound handlers so we can remove them later (Fix 4)
