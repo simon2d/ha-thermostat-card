@@ -648,18 +648,43 @@ class ThermostatCard extends HTMLElement {
 customElements.define('thermostat-card', ThermostatCard);
 
 // Global helper to open a thermostat popup from any other card
-// Usage from button-card or anywhere:
-//   window.openThermostatCard({ entity: 'climate.living_room', ...otherConfig })
+// Usage:  window.openThermostatCard({ entity: 'climate.living_room', ...otherConfig })
 window.openThermostatCard = function(config) {
   if (!config || !config.entity) {
     console.warn('openThermostatCard: missing entity');
     return;
   }
+  // If a popup is already open, close it first
+  document.querySelectorAll('thermostat-card.popup-mode').forEach(el => el.remove());
+
   const card = document.createElement('thermostat-card');
   card.setConfig({ ...config, popup_mode: true });
-  // Find hass instance from any existing HA element
   const haRoot = document.querySelector('home-assistant');
   const hass = haRoot?.hass;
   if (hass) card.hass = hass;
   document.body.appendChild(card);
 };
+
+// Registry of entity_id -> popup config for more-info interception
+// Usage in dashboard YAML (any card with tap_action: more-info will trigger this):
+//   <script>
+//     window.thermostatCardRegister('climate.living_room', { card_width: '350px', ... });
+//   </script>
+// Or call from any custom card. For simple usage, populate via the global config.
+window.thermostatCardConfigs = window.thermostatCardConfigs || {};
+window.thermostatCardRegister = function(entity, config) {
+  window.thermostatCardConfigs[entity] = config || {};
+};
+
+// Intercept HA's hass-more-info event globally — same hook honeycomb-menu uses
+window.addEventListener('hass-more-info', (e) => {
+  const entityId = e.detail?.entityId;
+  if (!entityId) return;
+  const config = window.thermostatCardConfigs[entityId];
+  if (!config) return; // not registered → let HA show its default dialog
+  // Prevent HA's default dialog
+  e.stopPropagation();
+  e.preventDefault();
+  // Open our popup
+  window.openThermostatCard({ entity: entityId, ...config });
+}, true); // useCapture: true so we run before HA's listener
