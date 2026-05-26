@@ -88,8 +88,11 @@ class ThermostatCard extends HTMLElement {
       }
       .wrap {
         display: flex; flex-direction: column; align-items: center;
-        justify-content: center; padding: 2rem 1rem 1.5rem;
+        justify-content: center; padding: 2rem 1rem 2rem;
         background: #0e0e0f; border-radius: 16px;
+        position: relative;
+        min-height: 80vh;
+        width: 320px;
       }
 
       .close-btn {
