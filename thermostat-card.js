@@ -661,10 +661,16 @@ window.openThermostatCard = function(config) {
 
   const card = document.createElement('thermostat-card');
   card.setConfig({ ...config, popup_mode: true });
-  const haRoot = document.querySelector('home-assistant');
-  const hass = haRoot?.hass;
-  if (hass) card.hass = hass;
   document.body.appendChild(card);
+
+  // Subscribe to HA state updates — same pattern honeycomb-menu uses
+  const haRoot = document.querySelector('home-assistant');
+  if (haRoot && typeof haRoot.provideHass === 'function') {
+    haRoot.provideHass(card);
+  } else if (haRoot?.hass) {
+    // Fallback: at least set the initial hass
+    card.hass = haRoot.hass;
+  }
 };
 
 // Global helper for fire-dom-event integration (honeycomb-menu pattern)
