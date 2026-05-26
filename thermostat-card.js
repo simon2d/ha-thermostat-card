@@ -67,13 +67,7 @@ class ThermostatCard extends HTMLElement {
     this._popupBlur    = config.popup_blur   !== undefined ? config.popup_blur : 8;
     this._popupScrim   = config.popup_scrim  || 'rgba(0,0,0,0.7)';
 
-    // Auto-register for more-info hijacking when used as a normal dashboard card
-    // Skip registration if used as popup, or if hijack: false explicitly set
-    if (!this._popupMode && config.hijack_more_info !== false) {
-      if (typeof window.thermostatCardRegister === 'function') {
-        window.thermostatCardRegister(this._entity, config);
-      }
-    }
+
 
     this._applyDimensions();
   }
@@ -673,26 +667,21 @@ window.openThermostatCard = function(config) {
   document.body.appendChild(card);
 };
 
-// Registry of entity_id -> popup config for more-info interception
-// Usage in dashboard YAML (any card with tap_action: more-info will trigger this):
-//   <script>
-//     window.thermostatCardRegister('climate.living_room', { card_width: '350px', ... });
-//   </script>
-// Or call from any custom card. For simple usage, populate via the global config.
-window.thermostatCardConfigs = window.thermostatCardConfigs || {};
-window.thermostatCardRegister = function(entity, config) {
-  window.thermostatCardConfigs[entity] = config || {};
+// Global helper for fire-dom-event integration (honeycomb-menu pattern)
+// Usage in any card's tap_action:
+//   tap_action:
+//     action: fire-dom-event
+//     thermostat_card:
+//       entity: climate.living_room
+//       card_width: 350px
+//       ...
+window.thermostat_card = function(config) {
+  window.openThermostatCard(config);
 };
 
-// Intercept HA's hass-more-info event globally — same hook honeycomb-menu uses
-window.addEventListener('hass-more-info', (e) => {
-  const entityId = e.detail?.entityId;
-  if (!entityId) return;
-  const config = window.thermostatCardConfigs[entityId];
-  if (!config) return; // not registered → let HA show its default dialog
-  // Prevent HA's default dialog
-  e.stopPropagation();
-  e.preventDefault();
-  // Open our popup
-  window.openThermostatCard({ entity: entityId, ...config });
-}, true); // useCapture: true so we run before HA's listener
+// Listen for ll-custom events at the document level — same mechanism honeycomb-menu uses
+document.addEventListener('ll-custom', (e) => {
+  if (e.detail && e.detail.thermostat_card) {
+    window.thermostat_card(e.detail.thermostat_card);
+  }
+});
