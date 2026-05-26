@@ -419,8 +419,9 @@ class ThermostatCard extends HTMLElement {
     if (dial) {
       dial.style.transform       = `scale(${this._dialScale || 1})`;
       dial.style.transformOrigin = 'center center';
-      dial.style.marginTop       = this._dialY || '0px';
-      dial.style.marginBottom    = this._dialY || '0px';
+      // Use relative positioning for Y offset on fixed-size element
+      dial.style.position        = 'relative';
+      dial.style.top             = this._dialY || '0px';
     }
 
     const btnRow = root.querySelector('.mode-row');
