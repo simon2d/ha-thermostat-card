@@ -349,23 +349,18 @@ class ThermostatCard extends HTMLElement {
 
     this._attachWindowListeners();
 
-    // Close button — walk up DOM to find and close Browser Mod popup
+    // Close button — fire Browser Mod close_popup service
     const closeBtn = root.getElementById('closeBtn');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
-        // Method 1: find browser-mod popup element and call close
-        const popup = document.querySelector('browser-mod-popup');
-        if (popup) {
-          popup.shadowRoot?.querySelector('ha-dialog')?.close?.();
-          popup.close?.();
-        }
-        // Method 2: fire close event up the composed path
-        this.dispatchEvent(new CustomEvent('dialog-closed', {
-          bubbles: true, composed: true
-        }));
-        // Method 3: simulate Escape key which Browser Mod listens to
-        document.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Escape', bubbles: true, composed: true
+        this.dispatchEvent(new CustomEvent('ll-custom', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            browser_mod: {
+              service: 'browser_mod.close_popup'
+            }
+          }
         }));
       });
     }
