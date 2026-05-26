@@ -61,6 +61,12 @@ class ThermostatCard extends HTMLElement {
     // Global opacity
     this._opacity      = config.opacity      !== undefined ? config.opacity : 1;
 
+    // Popup mode
+    this._popupMode    = config.popup_mode   || false;
+    this._popupOffsetY = config.popup_offset_y || '0px';
+    this._popupBlur    = config.popup_blur   !== undefined ? config.popup_blur : 8;
+    this._popupScrim   = config.popup_scrim  || 'rgba(0,0,0,0.7)';
+
     this._applyDimensions();
   }
 
@@ -254,6 +260,29 @@ class ThermostatCard extends HTMLElement {
       .mode-icon { font-size: 16px; line-height: 1; }
       .mode-text { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #444; }
       .mode-btn.active .mode-text { color: var(--mc,#888); }
+
+      /* ── Popup Mode ── */
+      :host(.popup-mode) {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        background: var(--popup-scrim, rgba(0,0,0,0.7));
+        backdrop-filter: blur(var(--popup-blur, 8px));
+        -webkit-backdrop-filter: blur(var(--popup-blur, 8px));
+        opacity: 0;
+        transition: opacity 0.25s ease;
+        padding-top: var(--popup-offset-y, 0px);
+      }
+      :host(.popup-mode.open) {
+        opacity: 1;
+      }
+      :host(.popup-mode) .wrap {
+        max-height: calc(100vh - var(--popup-offset-y, 0px));
+        overflow: auto;
+      }
     `;
     root.appendChild(style);
 
@@ -378,20 +407,30 @@ class ThermostatCard extends HTMLElement {
 
     this._attachWindowListeners();
 
-    // Close button — fire Browser Mod close_popup service
+    // Close button — close popup_mode if active, otherwise fire Browser Mod close
     const closeBtn = root.getElementById('closeBtn');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
-        this.dispatchEvent(new CustomEvent('ll-custom', {
-          bubbles: true,
-          composed: true,
-          detail: {
-            browser_mod: {
-              service: 'browser_mod.close_popup'
-            }
-          }
-        }));
+        if (this._popupMode) {
+          this._closePopup();
+        } else {
+          this.dispatchEvent(new CustomEvent('ll-custom', {
+            bubbles: true,
+            composed: true,
+            detail: { browser_mod: { service: 'browser_mod.close_popup' } }
+          }));
+        }
       });
+    }
+
+    // Outside click + Escape key for popup mode
+    if (this._popupMode) {
+      this.addEventListener('click', (e) => {
+        // Only close if click landed on the host element itself (the scrim), not the card
+        if (e.target === this) this._closePopup();
+      });
+      this._onEscape = (e) => { if (e.key === 'Escape') this._closePopup(); };
+      document.addEventListener('keydown', this._onEscape);
     }
 
     root.getElementById('modeRow').addEventListener('click', e => {
@@ -407,6 +446,16 @@ class ThermostatCard extends HTMLElement {
   _applyDimensions() {
     if (!this.shadowRoot) return;
     const root = this.shadowRoot;
+
+    // Popup mode styling
+    if (this._popupMode) {
+      this.classList.add('popup-mode');
+      this.style.setProperty('--popup-offset-y', this._popupOffsetY || '0px');
+      this.style.setProperty('--popup-blur',     `${this._popupBlur || 8}px`);
+      this.style.setProperty('--popup-scrim',    this._popupScrim || 'rgba(0,0,0,0.7)');
+      // Trigger fade-in on next frame
+      requestAnimationFrame(() => this.classList.add('open'));
+    }
 
     const wrap = root.querySelector('.wrap');
     if (wrap) {
@@ -456,6 +505,15 @@ class ThermostatCard extends HTMLElement {
   }
 
   // ── HA Service Calls ─────────────────────────────────────────
+
+  _closePopup() {
+    this.classList.remove('open');
+    // Wait for fade out, then remove from DOM
+    setTimeout(() => {
+      if (this._onEscape) document.removeEventListener('keydown', this._onEscape);
+      this.remove();
+    }, 250);
+  }
 
   _callSetTemp() {
     if (!this._hass) return;
@@ -592,3 +650,20 @@ class ThermostatCard extends HTMLElement {
 }
 
 customElements.define('thermostat-card', ThermostatCard);
+
+// Global helper to open a thermostat popup from any other card
+// Usage from button-card or anywhere:
+//   window.openThermostatCard({ entity: 'climate.living_room', ...otherConfig })
+window.openThermostatCard = function(config) {
+  if (!config || !config.entity) {
+    console.warn('openThermostatCard: missing entity');
+    return;
+  }
+  const card = document.createElement('thermostat-card');
+  card.setConfig({ ...config, popup_mode: true });
+  // Find hass instance from any existing HA element
+  const haRoot = document.querySelector('home-assistant');
+  const hass = haRoot?.hass;
+  if (hass) card.hass = hass;
+  document.body.appendChild(card);
+};
