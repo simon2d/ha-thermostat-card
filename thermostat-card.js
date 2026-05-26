@@ -41,8 +41,24 @@ class ThermostatCard extends HTMLElement {
     this._minTemp      = 10;
     this._maxTemp      = 32;
     this._hvacModes    = ['heat','cool','heat_cool','off'];
-    this._cardWidth    = config.card_width  || '360px';
-    this._cardHeight   = config.card_height || '80vh';
+    this._cardWidth    = config.card_width   || '360px';
+    this._cardHeight   = config.card_height  || '80vh';
+
+    // Dial
+    this._dialScale    = config.dial_scale   || 1;
+    this._dialY        = config.dial_y       || '0px';
+
+    // Buttons
+    this._btnScale     = config.btn_scale    || 1;
+    this._btnY         = config.btn_y        || '0px';
+
+    // Title
+    this._titleScale   = config.title_scale  || 1;
+    this._titleY       = config.title_y      || '0px';
+
+    // Global opacity
+    this._opacity      = config.opacity      !== undefined ? config.opacity : 1;
+
     this._applyDimensions();
   }
 
@@ -384,10 +400,31 @@ class ThermostatCard extends HTMLElement {
 
   _applyDimensions() {
     if (!this.shadowRoot) return;
-    const wrap = this.shadowRoot.querySelector('.wrap');
+    const root = this.shadowRoot;
+
+    const wrap = root.querySelector('.wrap');
     if (wrap) {
       wrap.style.width     = this._cardWidth  || '360px';
       wrap.style.minHeight = this._cardHeight || '80vh';
+      wrap.style.opacity   = this._opacity    !== undefined ? this._opacity : 1;
+    }
+
+    const dial = root.querySelector('.dial-scene');
+    if (dial) {
+      dial.style.transform      = `scale(${this._dialScale || 1}) translateY(${this._dialY || '0px'})`;
+      dial.style.transformOrigin = 'center center';
+    }
+
+    const btnRow = root.querySelector('.mode-row');
+    if (btnRow) {
+      btnRow.style.transform      = `scale(${this._btnScale || 1}) translateY(${this._btnY || '0px'})`;
+      btnRow.style.transformOrigin = 'center center';
+    }
+
+    const title = root.querySelector('.room-label');
+    if (title) {
+      title.style.transform      = `scale(${this._titleScale || 1}) translateY(${this._titleY || '0px'})`;
+      title.style.transformOrigin = 'center center';
     }
   }
 
