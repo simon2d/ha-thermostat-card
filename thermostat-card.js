@@ -417,25 +417,24 @@ class ThermostatCard extends HTMLElement {
 
     const dial = root.querySelector('.dial-scene');
     if (dial) {
-      dial.style.transform       = `scale(${this._dialScale || 1})`;
-      dial.style.transformOrigin = 'center center';
-      // Use relative positioning for Y offset on fixed-size element
-      dial.style.position        = 'relative';
-      dial.style.top             = this._dialY || '0px';
+      // translateY first, then scale — keeps horizontal centering intact
+      dial.style.transform       = `translateY(${this._dialY || '0px'}) scale(${this._dialScale || 1})`;
+      dial.style.transformOrigin = '50% 50%';
+      dial.style.position        = 'static';
     }
 
     const btnRow = root.querySelector('.mode-row');
     if (btnRow) {
-      btnRow.style.transform       = `scale(${this._btnScale || 1})`;
-      btnRow.style.transformOrigin = 'center center';
-      btnRow.style.marginTop       = this._btnY || '0px';
+      btnRow.style.transform       = `translateY(${this._btnY || '0px'}) scale(${this._btnScale || 1})`;
+      btnRow.style.transformOrigin = '50% 50%';
+      btnRow.style.marginTop       = '0px';
     }
 
     const title = root.querySelector('.room-label');
     if (title) {
-      title.style.transform       = `scale(${this._titleScale || 1})`;
-      title.style.transformOrigin = 'center center';
-      title.style.marginTop       = this._titleY || '0px';
+      title.style.transform       = `translateY(${this._titleY || '0px'}) scale(${this._titleScale || 1})`;
+      title.style.transformOrigin = '50% 50%';
+      title.style.marginTop       = '0px';
     }
   }
 
