@@ -95,7 +95,7 @@ class ThermostatCard extends HTMLElement {
       .close-btn {
         position: absolute;
         top: 12px;
-        right: 14px;
+        left: 14px;
         background: none;
         border: none;
         color: #3a3a3c;
@@ -349,16 +349,24 @@ class ThermostatCard extends HTMLElement {
 
     this._attachWindowListeners();
 
-    // Close button — fires Browser Mod close event
+    // Close button — walk up DOM to find and close Browser Mod popup
     const closeBtn = root.getElementById('closeBtn');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
-        this.dispatchEvent(new CustomEvent('ll-custom', {
-          bubbles: true, composed: true,
-          detail: { card_id: 'browser-mod-popup', type: 'close' }
+        // Method 1: find browser-mod popup element and call close
+        const popup = document.querySelector('browser-mod-popup');
+        if (popup) {
+          popup.shadowRoot?.querySelector('ha-dialog')?.close?.();
+          popup.close?.();
+        }
+        // Method 2: fire close event up the composed path
+        this.dispatchEvent(new CustomEvent('dialog-closed', {
+          bubbles: true, composed: true
         }));
-        // Fallback: also try Browser Mod's popup close service
-        window.dispatchEvent(new CustomEvent('browser-mod-close-popup'));
+        // Method 3: simulate Escape key which Browser Mod listens to
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Escape', bubbles: true, composed: true
+        }));
       });
     }
 
