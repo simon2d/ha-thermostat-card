@@ -423,12 +423,8 @@ class ThermostatCard extends HTMLElement {
       });
     }
 
-    // Outside click + Escape key for popup mode
+    // Escape key for popup mode (no outside-click — user must use X button)
     if (this._popupMode) {
-      this.addEventListener('click', (e) => {
-        // Only close if click landed on the host element itself (the scrim), not the card
-        if (e.target === this) this._closePopup();
-      });
       this._onEscape = (e) => { if (e.key === 'Escape') this._closePopup(); };
       document.addEventListener('keydown', this._onEscape);
     }
