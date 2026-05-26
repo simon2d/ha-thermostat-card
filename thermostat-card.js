@@ -67,6 +67,14 @@ class ThermostatCard extends HTMLElement {
     this._popupBlur    = config.popup_blur   !== undefined ? config.popup_blur : 8;
     this._popupScrim   = config.popup_scrim  || 'rgba(0,0,0,0.7)';
 
+    // Auto-register for more-info hijacking when used as a normal dashboard card
+    // Skip registration if used as popup, or if hijack: false explicitly set
+    if (!this._popupMode && config.hijack_more_info !== false) {
+      if (typeof window.thermostatCardRegister === 'function') {
+        window.thermostatCardRegister(this._entity, config);
+      }
+    }
+
     this._applyDimensions();
   }
 
