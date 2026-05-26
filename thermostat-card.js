@@ -31,7 +31,8 @@ class ThermostatCard extends HTMLElement {
     this._entity     = config.entity || 'climate.living_room';
     this._notchAngle = 0;
     this._dragging   = false;
-    this._cooldown   = false;
+    this._cooldown          = false;
+    this._notchInitialised  = false;
 
     // Safe defaults so _updateGlow() never sees undefined/NaN
     this._currentTemp = 19;
@@ -570,12 +571,14 @@ class ThermostatCard extends HTMLElement {
       if (hEl) hEl.textContent = `${this._humidity}%`;
     }
 
-    // Sync notch to current setpoint
+    // Only sync notch angle from setpoint on first load
     const CENTER_TEMP = 21, TEMP_RANGE = 28;
-    // Clamp setpoint to entity range on load
     this._setpoint = Math.max(this._minTemp, Math.min(this._maxTemp, this._setpoint));
-    this._notchAngle = ((this._setpoint - CENTER_TEMP) / TEMP_RANGE) * 270;
-    this._notchAngle = Math.max(-135, Math.min(135, this._notchAngle));
+    if (!this._notchInitialised) {
+      this._notchAngle = ((this._setpoint - CENTER_TEMP) / TEMP_RANGE) * 270;
+      this._notchAngle = Math.max(-135, Math.min(135, this._notchAngle));
+      this._notchInitialised = true;
+    }
     const notch = root.getElementById('notchRing');
     if (notch) notch.style.transform = `rotate(${this._notchAngle}deg)`;
 
