@@ -31,6 +31,7 @@ class ThermostatCard extends HTMLElement {
     this._entity     = config.entity || 'climate.living_room';
     this._notchAngle = 0;
     this._dragging   = false;
+    this._cooldown   = false;
 
     // Safe defaults so _updateGlow() never sees undefined/NaN
     this._currentTemp = 19;
@@ -64,7 +65,7 @@ class ThermostatCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    if (this._dragging) return;
+    if (this._dragging || this._cooldown) return;
 
     const state = hass.states[this._entity];
     if (!state) return;
