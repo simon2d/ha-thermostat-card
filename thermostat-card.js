@@ -680,7 +680,7 @@ window.thermostat_card = function(config) {
 };
 
 // Listen for ll-custom events at the document level — same mechanism honeycomb-menu uses
-document.addEventListener('ll-custom', (e) => {
+document.body.addEventListener('ll-custom', (e) => {
   if (e.detail && e.detail.thermostat_card) {
     window.thermostat_card(e.detail.thermostat_card);
   }
