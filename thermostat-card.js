@@ -120,16 +120,16 @@ class ThermostatCard extends HTMLElement {
         left: 14px;
         background: none;
         border: none;
-        color: #3a3a3c;
-        font-size: 14px;
+        color: #555;
+        font-size: 20px;
         cursor: pointer;
         line-height: 1;
-        padding: 4px;
+        padding: 6px;
         border-radius: 50%;
         transition: color 0.2s;
         font-family: 'DM Sans', sans-serif;
       }
-      .close-btn:hover { color: #888; }
+      .close-btn:hover { color: #aaa; }
 
       .room-label {
         font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
