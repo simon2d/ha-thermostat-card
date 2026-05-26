@@ -53,7 +53,9 @@ class ThermostatCard extends HTMLElement {
     this._currentTemp = state.attributes.current_temperature ?? 19;
     this._humidity    = state.attributes.humidity ?? null;
     this._setpoint    = state.attributes.temperature ?? 21;
-    this._mode          = state.state ?? 'off';
+    // Normalise heat_cool -> auto for internal UI use
+    const rawMode = state.state ?? 'off';
+    this._mode = rawMode === 'heat_cool' ? 'auto' : rawMode;
     this._friendlyName  = state.attributes.friendly_name ?? '';
     this._render();
   }
@@ -271,7 +273,7 @@ class ThermostatCard extends HTMLElement {
     const root  = this.shadowRoot;
     const scene = root.getElementById('dialScene');
 
-    const MIN_TEMP = 7, MAX_TEMP = 35, CENTER_TEMP = 21, TEMP_RANGE = 28;
+    const CENTER_TEMP = 21, TEMP_RANGE = 28;
     const NOTCH_MIN = -135, NOTCH_MAX = 135;
     let lastAngle = null;
 
@@ -298,7 +300,7 @@ class ThermostatCard extends HTMLElement {
       lastAngle = a;
       this._notchAngle = Math.max(NOTCH_MIN, Math.min(NOTCH_MAX, this._notchAngle + d));
       this._setpoint   = Math.round((CENTER_TEMP + (this._notchAngle / 270) * TEMP_RANGE) * 2) / 2;
-      this._setpoint   = Math.max(MIN_TEMP, Math.min(MAX_TEMP, this._setpoint));
+      this._setpoint   = Math.max(this._minTemp, Math.min(this._maxTemp, this._setpoint));
       root.getElementById('notchRing').style.transform = `rotate(${this._notchAngle}deg)`;
       this._updateGlow();
     };
@@ -477,6 +479,8 @@ class ThermostatCard extends HTMLElement {
 
     // Sync notch to current setpoint
     const CENTER_TEMP = 21, TEMP_RANGE = 28;
+    // Clamp setpoint to entity range on load
+    this._setpoint = Math.max(this._minTemp, Math.min(this._maxTemp, this._setpoint));
     this._notchAngle = ((this._setpoint - CENTER_TEMP) / TEMP_RANGE) * 270;
     this._notchAngle = Math.max(-135, Math.min(135, this._notchAngle));
     const notch = root.getElementById('notchRing');
