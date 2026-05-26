@@ -663,13 +663,14 @@ window.openThermostatCard = function(config) {
   card.setConfig({ ...config, popup_mode: true });
   document.body.appendChild(card);
 
-  // Subscribe to HA state updates — same pattern honeycomb-menu uses
   const haRoot = document.querySelector('home-assistant');
+  // Set hass directly first to ensure initial render gets fresh state
+  if (haRoot?.hass) {
+    card.hass = haRoot.hass;
+  }
+  // Then subscribe to updates so it stays in sync
   if (haRoot && typeof haRoot.provideHass === 'function') {
     haRoot.provideHass(card);
-  } else if (haRoot?.hass) {
-    // Fallback: at least set the initial hass
-    card.hass = haRoot.hass;
   }
 };
 
