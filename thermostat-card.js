@@ -664,14 +664,16 @@ window.openThermostatCard = function(config) {
   document.body.appendChild(card);
 
   const haRoot = document.querySelector('home-assistant');
-  // Set hass directly first to ensure initial render gets fresh state
-  if (haRoot?.hass) {
-    card.hass = haRoot.hass;
-  }
-  // Then subscribe to updates so it stays in sync
+  // Subscribe to updates first so the card stays in sync
   if (haRoot && typeof haRoot.provideHass === 'function') {
     haRoot.provideHass(card);
   }
+  // Force initial render with fresh state on next frame, after DOM is fully ready
+  requestAnimationFrame(() => {
+    if (haRoot?.hass) {
+      card.hass = haRoot.hass;
+    }
+  });
 };
 
 // Global helper for fire-dom-event integration (honeycomb-menu pattern)
