@@ -41,6 +41,8 @@ class ThermostatCard extends HTMLElement {
     this._minTemp      = 10;
     this._maxTemp      = 32;
     this._hvacModes    = ['heat','cool','heat_cool','off'];
+    this._cardWidth    = config.card_width  || '360px';
+    this._cardHeight   = config.card_height || '80vh';
   }
 
   set hass(hass) {
@@ -92,7 +94,7 @@ class ThermostatCard extends HTMLElement {
         background: #0e0e0f; border-radius: 16px;
         position: relative;
         min-height: 80vh;
-        width: 320px;
+        width: 360px;
       }
 
       .close-btn {
@@ -502,6 +504,12 @@ class ThermostatCard extends HTMLElement {
   _render() {
     if (!this.shadowRoot) return;
     const root  = this.shadowRoot;
+    // Apply configurable card dimensions
+    const wrap = root.querySelector('.wrap');
+    if (wrap) {
+      wrap.style.width     = this._cardWidth;
+      wrap.style.minHeight = this._cardHeight;
+    }
     const state = this._hass?.states[this._entity];
 
     if (state?.attributes?.friendly_name) {
