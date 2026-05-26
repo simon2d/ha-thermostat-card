@@ -38,6 +38,9 @@ class ThermostatCard extends HTMLElement {
     this._mode        = 'off';
     this._humidity     = null;
     this._friendlyName = '';
+    this._minTemp      = 10;
+    this._maxTemp      = 32;
+    this._hvacModes    = ['heat','cool','heat_cool','off'];
   }
 
   set hass(hass) {
@@ -365,9 +368,14 @@ class ThermostatCard extends HTMLElement {
 
   _callSetMode() {
     if (!this._hass) return;
+    // Map internal 'auto' to 'heat_cool' if entity doesn't support auto
+    let mode = this._mode;
+    if (mode === 'auto' && !this._hvacModes.includes('auto') && this._hvacModes.includes('heat_cool')) {
+      mode = 'heat_cool';
+    }
     this._hass.callService('climate', 'set_hvac_mode', {
       entity_id: this._entity,
-      hvac_mode: this._mode
+      hvac_mode: mode
     });
   }
 
