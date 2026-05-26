@@ -48,7 +48,6 @@ class ThermostatCard extends HTMLElement {
 
     // Dial
     this._dialScale    = config.dial_scale   || 1;
-    this._dialY        = config.dial_y       || '0px';
 
     // Buttons
     this._btnScale     = config.btn_scale    || 1;
@@ -465,7 +464,7 @@ class ThermostatCard extends HTMLElement {
     const dial = root.querySelector('.dial-scene');
     if (dial) {
       // translateY first, then scale — keeps horizontal centering intact
-      dial.style.transform       = `translateY(${this._dialY || '0px'}) scale(${this._dialScale || 1})`;
+      dial.style.transform       = `scale(${this._dialScale || 1})`;
       dial.style.transformOrigin = '50% 50%';
       dial.style.position        = 'static';
     }
