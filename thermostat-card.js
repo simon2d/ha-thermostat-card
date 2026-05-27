@@ -61,10 +61,12 @@ class ThermostatCard extends HTMLElement {
     this._opacity      = config.opacity      !== undefined ? config.opacity : 1;
 
     // Popup mode
-    this._popupMode    = config.popup_mode   || false;
-    this._popupOffsetY = config.popup_offset_y || '0px';
-    this._popupBlur    = config.popup_blur   !== undefined ? config.popup_blur : 8;
-    this._popupScrim   = config.popup_scrim  || 'rgba(0,0,0,0.7)';
+    this._popupMode      = config.popup_mode   || false;
+    this._popupOffsetY   = config.popup_offset_y || '0px';
+    this._popupBlur      = config.popup_blur   !== undefined ? config.popup_blur : 8;
+    this._popupScrim     = config.popup_scrim  || 'rgba(0,0,0,0.7)';
+    this._popupAnimation = config.popup_animation || 'fade';     // fade | flicker | zoom
+    this._popupDuration  = config.popup_duration  || 300;        // ms
 
 
 
@@ -274,7 +276,7 @@ class ThermostatCard extends HTMLElement {
         backdrop-filter: blur(var(--popup-blur, 8px));
         -webkit-backdrop-filter: blur(var(--popup-blur, 8px));
         opacity: 0;
-        transition: opacity 0.25s ease;
+        transition: opacity var(--popup-duration, 300ms) ease;
         padding-top: var(--popup-offset-y, 0px);
       }
       :host(.popup-mode.open) {
@@ -283,6 +285,64 @@ class ThermostatCard extends HTMLElement {
       :host(.popup-mode) .wrap {
         max-height: calc(100vh - var(--popup-offset-y, 0px));
         overflow: auto;
+      }
+
+      /* Animations applied to the inner .wrap so the scrim still fades cleanly */
+      :host(.popup-mode.anim-fade.open) .wrap {
+        animation: fadeIn var(--popup-duration, 300ms) ease forwards;
+      }
+      :host(.popup-mode.anim-fade.closing) .wrap {
+        animation: fadeOut var(--popup-duration, 300ms) ease forwards;
+      }
+      :host(.popup-mode.anim-zoom.open) .wrap {
+        animation: smoothZoomIn var(--popup-duration, 300ms) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      }
+      :host(.popup-mode.anim-zoom.closing) .wrap {
+        animation: smoothZoomOut var(--popup-duration, 300ms) cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+      }
+      :host(.popup-mode.anim-flicker.open) .wrap {
+        animation: flickerIn var(--popup-duration, 300ms) ease forwards;
+      }
+      :host(.popup-mode.anim-flicker.closing) .wrap {
+        animation: flickerOut var(--popup-duration, 300ms) ease forwards;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to   { opacity: 0; }
+      }
+      @keyframes smoothZoomIn {
+        0%   { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); }
+        50%  { opacity: 1; }
+        100% { opacity: 1; transform: scale3d(1, 1, 1); }
+      }
+      @keyframes smoothZoomOut {
+        0%   { opacity: 1; transform: scale3d(1, 1, 1); }
+        50%  { opacity: 1; }
+        100% { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); }
+      }
+      @keyframes flickerIn {
+        0%   { opacity: 0;   transform: scale3d(0.3, 0.3, 0.3); }
+        15%  { opacity: 1;   transform: scale3d(0.45, 0.45, 0.45); }
+        25%  { opacity: 0.7; transform: scale3d(0.55, 0.55, 0.55); }
+        40%  { opacity: 1;   transform: scale3d(0.7, 0.7, 0.7); }
+        55%  { opacity: 0.7; transform: scale3d(0.82, 0.82, 0.82); }
+        70%  { opacity: 1;   transform: scale3d(0.92, 0.92, 0.92); }
+        85%  { opacity: 0.7; transform: scale3d(0.98, 0.98, 0.98); }
+        100% { opacity: 1;   transform: scale3d(1, 1, 1); }
+      }
+      @keyframes flickerOut {
+        0%   { opacity: 1;   transform: scale3d(1, 1, 1); }
+        15%  { opacity: 0.7; transform: scale3d(0.92, 0.92, 0.92); }
+        30%  { opacity: 1;   transform: scale3d(0.8, 0.8, 0.8); }
+        45%  { opacity: 0.7; transform: scale3d(0.65, 0.65, 0.65); }
+        60%  { opacity: 1;   transform: scale3d(0.5, 0.5, 0.5); }
+        80%  { opacity: 0.7; transform: scale3d(0.4, 0.4, 0.4); }
+        100% { opacity: 0;   transform: scale3d(0.3, 0.3, 0.3); }
       }
     `;
     root.appendChild(style);
@@ -447,10 +507,12 @@ class ThermostatCard extends HTMLElement {
     // Popup mode styling
     if (this._popupMode) {
       this.classList.add('popup-mode');
+      this.classList.add(`anim-${this._popupAnimation || 'fade'}`);
       this.style.setProperty('--popup-offset-y', this._popupOffsetY || '0px');
       this.style.setProperty('--popup-blur',     `${this._popupBlur || 8}px`);
       this.style.setProperty('--popup-scrim',    this._popupScrim || 'rgba(0,0,0,0.7)');
-      // Trigger fade-in on next frame
+      this.style.setProperty('--popup-duration', `${this._popupDuration || 300}ms`);
+      // Trigger animation on next frame
       requestAnimationFrame(() => this.classList.add('open'));
     }
 
@@ -504,12 +566,13 @@ class ThermostatCard extends HTMLElement {
   // ── HA Service Calls ─────────────────────────────────────────
 
   _closePopup() {
+    this.classList.add('closing');
     this.classList.remove('open');
-    // Wait for fade out, then remove from DOM
+    const duration = this._popupDuration || 300;
     setTimeout(() => {
       if (this._onEscape) document.removeEventListener('keydown', this._onEscape);
       this.remove();
-    }, 250);
+    }, duration);
   }
 
   _callSetTemp() {
